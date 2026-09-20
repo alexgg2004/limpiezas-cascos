@@ -1,0 +1,100 @@
+.mapa-ubicacion {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  font-family: var(--font-body);
+  background-color: oklch(93% 0.02 150);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 36px, oklch(88% 0.015 200 / 55%) 36px, oklch(88% 0.015 200 / 55%) 38px),
+    repeating-linear-gradient(90deg, transparent, transparent 52px, oklch(88% 0.015 200 / 55%) 52px, oklch(88% 0.015 200 / 55%) 54px);
+}
+
+.mapa-ubicacion__zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px oklch(20% 0.02 240 / 18%);
+}
+
+.mapa-ubicacion__zoom-btn {
+  width: 26px;
+  height: 26px;
+  background: #fff;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mapa-ubicacion__zoom-btn:last-child {
+  border-bottom: none;
+}
+
+.mapa-ubicacion__hint {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  box-shadow: 0 2px 6px oklch(20% 0.02 240 / 15%);
+}
+
+.mapa-ubicacion__pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -100%);
+  filter: drop-shadow(0 3px 4px oklch(20% 0.02 240 / 30%));
+}
+
+.mapa-ubicacion__empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  background: oklch(100% 0 0 / 85%);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.mapa-ubicacion__coords {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: oklch(100% 0 0 / 92%);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--ink-2);
+  box-shadow: 0 2px 6px oklch(20% 0.02 240 / 12%);
+}
+
+.mapa-ubicacion__link {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--teal) !important;
+  box-shadow: 0 2px 6px oklch(20% 0.02 240 / 15%);
+}

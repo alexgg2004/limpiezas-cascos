@@ -20,7 +20,7 @@ services:
 
   # Backend Spring Boot
   backend-api:
-    build: .
+    build: ./backend
     container_name: spring-limpiezas-api
     restart: always
     depends_on:
@@ -35,8 +35,11 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       app.upload.dir: ${UPLOAD_DIR}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_ALLOWED_EMAILS: ${GOOGLE_ALLOWED_EMAILS}
+      INVITATION_CODE: ${INVITATION_CODE}
     volumes:
-      - ./uploads:/app/uploads
+      - ./backend/uploads:/app/uploads
 
 volumes:
   postgres_data:

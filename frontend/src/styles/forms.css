@@ -1,0 +1,134 @@
+.field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.field > span,
+.field__label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 7px;
+}
+
+.field__required {
+  color: var(--teal);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background: var(--surface);
+}
+
+.field textarea {
+  resize: none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 6px;
+}
+
+.field-error {
+  font-size: 12px;
+  color: var(--red-text);
+  margin-top: 6px;
+}
+
+.form-error-banner {
+  background: var(--red-100);
+  color: var(--red-text);
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+
+.segmented {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.segmented__option {
+  flex-grow: 1;
+  text-align: center;
+  padding: 9px 0;
+  background: var(--surface);
+  color: var(--ink-3);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12.5px;
+  border: none;
+  border-left: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.segmented__option:first-child {
+  border-left: none;
+}
+
+.segmented__option--active-pendiente {
+  background: var(--amber-100);
+  color: var(--amber-text);
+  font-weight: 700;
+}
+
+.segmented__option--active-realizado {
+  background: var(--green-100);
+  color: var(--green-text);
+  font-weight: 700;
+}
+
+.segmented__option--active-cancelado {
+  background: var(--red-100);
+  color: var(--red-text);
+  font-weight: 700;
+}
+
+.computed-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.computed-total span:first-child {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.computed-total span:last-child {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--teal-dark);
+}
