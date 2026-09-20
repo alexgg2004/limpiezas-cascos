@@ -1,0 +1,36 @@
+:root {
+  --ink: oklch(24% 0.02 240);
+  --ink-2: oklch(48% 0.015 240);
+  --ink-3: oklch(64% 0.01 240);
+  --bg: oklch(97.5% 0.004 240);
+  --surface: oklch(100% 0 0);
+  --line: oklch(91% 0.008 240);
+
+  --teal: oklch(52% 0.11 231);
+  --teal-dark: oklch(40% 0.10 231);
+  --teal-100: oklch(94% 0.025 231);
+
+  --navy: oklch(21% 0.045 235);
+
+  --green: oklch(58% 0.13 152);
+  --green-100: oklch(94% 0.045 152);
+  --green-text: oklch(35% 0.10 152);
+
+  --amber: oklch(68% 0.15 75);
+  --amber-100: oklch(94% 0.06 80);
+  --amber-text: oklch(40% 0.12 75);
+
+  --red: oklch(55% 0.17 25);
+  --red-100: oklch(95% 0.045 25);
+  --red-text: oklch(40% 0.14 25);
+
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-modal: 0 20px 60px oklch(20% 0.02 240 / 30%);
+}

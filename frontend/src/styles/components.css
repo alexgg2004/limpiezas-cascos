@@ -1,0 +1,132 @@
+/* Patrones compartidos entre páginas: cabecera, botones, tarjetas y tablas. */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--ink);
+}
+
+.page-subtitle {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  margin-top: 3px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  border: none;
+}
+
+.btn--primary {
+  background: var(--teal);
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: var(--teal-dark);
+}
+
+.btn--ghost {
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1.5px solid var(--line);
+}
+
+.btn--danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn--danger:hover {
+  background: var(--red-text);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background: var(--bg);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 13px 22px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table td {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.state-message {
+  padding: 40px 22px;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.state-message--error {
+  color: var(--red-text, var(--red));
+}
