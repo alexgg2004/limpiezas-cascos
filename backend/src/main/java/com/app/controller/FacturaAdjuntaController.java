@@ -9,13 +9,20 @@ import com.app.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
+/**
+ * Facturas adjuntas de un servicio. Un servicio puede tener varias.
+ */
 @RestController
-@RequestMapping("/api/servicios")
+@RequestMapping("/api/servicios/{servicioId}/facturas")
 @RequiredArgsConstructor
 public class FacturaAdjuntaController {
 
@@ -23,18 +30,22 @@ public class FacturaAdjuntaController {
     private final ServicioRepository servicioRepository;
     private final FacturaAdjuntaRepository facturaRepository;
 
-    @PostMapping("/{servicioId}/factura")
+    @GetMapping
+    public ResponseEntity<List<FacturaInfoResponseDto>> listar(@PathVariable Long servicioId) {
+        List<FacturaInfoResponseDto> lista = facturaRepository
+                .findAllByServicioIdOrderByFechaSubidaDesc(servicioId).stream()
+                .map(FacturaAdjuntaController::aDto)
+                .toList();
+        return ResponseEntity.ok(lista);
+    }
+
+    @PostMapping
     public ResponseEntity<FacturaInfoResponseDto> subirFactura(
             @PathVariable Long servicioId,
             @RequestParam("archivo") MultipartFile archivo) throws Exception {
 
         Servicio servicio = servicioRepository.findById(servicioId)
-                .orElseThrow(() -> new RuntimeException("Servicio no encontrado"));
-
-        facturaRepository.findByServicioId(servicioId).ifPresent(f -> {
-            storageService.eliminarArchivo(f.getNombreGuardado());
-            facturaRepository.delete(f);
-        });
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Servicio no encontrado"));
 
         String nombreGuardado = storageService.guardarArchivo(archivo);
 
@@ -47,16 +58,13 @@ public class FacturaAdjuntaController {
                 .build();
 
         FacturaAdjunta guardada = facturaRepository.save(factura);
-
-        return ResponseEntity.ok(new FacturaInfoResponseDto(
-                guardada.getId(), guardada.getNombreOriginal(), guardada.getTamanoBytes(), guardada.getFechaSubida()
-        ));
+        return ResponseEntity.ok(aDto(guardada));
     }
 
-    @GetMapping("/{servicioId}/factura")
-    public ResponseEntity<Resource> verFactura(@PathVariable Long servicioId) {
-        FacturaAdjunta factura = facturaRepository.findByServicioId(servicioId)
-                .orElseThrow(() -> new RuntimeException("Factura no encontrada para este servicio"));
+    @GetMapping("/{facturaId}")
+    public ResponseEntity<Resource> verFactura(@PathVariable Long servicioId, @PathVariable Long facturaId) {
+        FacturaAdjunta factura = facturaRepository.findByIdAndServicioId(facturaId, servicioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
 
         Resource resource = storageService.cargarArchivo(factura.getNombreGuardado());
 
@@ -64,5 +72,19 @@ public class FacturaAdjuntaController {
                 .contentType(MediaType.parseMediaType(factura.getTipoContenido()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + factura.getNombreOriginal() + "\"")
                 .body(resource);
+    }
+
+    @DeleteMapping("/{facturaId}")
+    public ResponseEntity<Void> eliminarFactura(@PathVariable Long servicioId, @PathVariable Long facturaId) {
+        FacturaAdjunta factura = facturaRepository.findByIdAndServicioId(facturaId, servicioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
+
+        storageService.eliminarArchivo(factura.getNombreGuardado());
+        facturaRepository.delete(factura);
+        return ResponseEntity.noContent().build();
+    }
+
+    private static FacturaInfoResponseDto aDto(FacturaAdjunta f) {
+        return new FacturaInfoResponseDto(f.getId(), f.getNombreOriginal(), f.getTamanoBytes(), f.getFechaSubida());
     }
 }

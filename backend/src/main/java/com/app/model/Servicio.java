@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -38,11 +40,10 @@ public class Servicio {
     @JoinColumn(name = "sitio_id", nullable = false)
     private SitioLimpieza sitio;
 
-    @OneToOne(mappedBy = "servicio", cascade = CascadeType.ALL, orphanRemoval = true)
-    private FacturaAdjunta facturaAdjunta;
-
-    @Column(name = "ruta_factura")
-    private String rutaFactura;
+    /** Un servicio puede tener varias facturas adjuntas. */
+    @OneToMany(mappedBy = "servicio", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<FacturaAdjunta> facturas = new ArrayList<>();
 
     /** Usuarios (operarios) que se ocupan de este servicio. */
     @ManyToMany(fetch = FetchType.LAZY)

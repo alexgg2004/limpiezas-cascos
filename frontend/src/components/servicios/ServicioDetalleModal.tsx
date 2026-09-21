@@ -4,7 +4,7 @@ import { MapaUbicacion } from '../ui/MapaUbicacion';
 import { EstadoBadge } from '../ui/EstadoBadge';
 import { facturasApi } from '../../api/facturas';
 import { sitiosApi } from '../../api/sitios';
-import type { ServicioResponseDto, SitioLimpiezaResponseDto } from '../../types';
+import type { FacturaInfoResponseDto, ServicioResponseDto, SitioLimpiezaResponseDto } from '../../types';
 
 interface Props {
   open: boolean;
@@ -12,18 +12,22 @@ interface Props {
   onClose: () => void;
   onEditar: () => void;
   onEliminar: () => void;
-  onFacturaSubida: (servicio: ServicioResponseDto) => void;
+  onFacturasCambiadas: (servicio: ServicioResponseDto) => void;
 }
 
-export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onEliminar, onFacturaSubida }: Props) {
+export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onEliminar, onFacturasCambiadas }: Props) {
   const [sitio, setSitio] = useState<SitioLimpiezaResponseDto | null>(null);
+  const [facturas, setFacturas] = useState<FacturaInfoResponseDto[]>([]);
   const [subiendo, setSubiendo] = useState(false);
+  const [borrandoId, setBorrandoId] = useState<number | null>(null);
   const [errorFactura, setErrorFactura] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open || !servicio) return;
     setSitio(null);
+    setFacturas(servicio.facturas);
+    setErrorFactura(null);
     sitiosApi
       .obtenerPorId(servicio.sitioId)
       .then(setSitio)
@@ -32,10 +36,10 @@ export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onElim
 
   if (!servicio) return null;
 
-  async function verFactura() {
+  async function verFactura(facturaId: number) {
     if (!servicio) return;
     try {
-      const url = await facturasApi.obtenerUrlVisualizacion(servicio.id);
+      const url = await facturasApi.obtenerUrlVisualizacion(servicio.id, facturaId);
       window.open(url, '_blank', 'noopener');
     } catch {
       setErrorFactura('No se ha podido abrir la factura.');
@@ -43,18 +47,39 @@ export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onElim
   }
 
   async function subirFactura(e: ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0];
+    const archivos = Array.from(e.target.files ?? []);
     e.target.value = '';
-    if (!archivo || !servicio) return;
+    if (archivos.length === 0 || !servicio) return;
     setSubiendo(true);
     setErrorFactura(null);
     try {
-      await facturasApi.subir(servicio.id, archivo);
-      onFacturaSubida({ ...servicio, tieneFacturaAdjunta: true });
+      const nuevas: FacturaInfoResponseDto[] = [];
+      for (const archivo of archivos) {
+        nuevas.push(await facturasApi.subir(servicio.id, archivo));
+      }
+      const facturasActualizadas = [...nuevas, ...facturas];
+      setFacturas(facturasActualizadas);
+      onFacturasCambiadas({ ...servicio, facturas: facturasActualizadas });
     } catch {
       setErrorFactura('No se ha podido subir la factura.');
     } finally {
       setSubiendo(false);
+    }
+  }
+
+  async function eliminarFactura(facturaId: number) {
+    if (!servicio) return;
+    setBorrandoId(facturaId);
+    setErrorFactura(null);
+    try {
+      await facturasApi.eliminar(servicio.id, facturaId);
+      const facturasActualizadas = facturas.filter((f) => f.id !== facturaId);
+      setFacturas(facturasActualizadas);
+      onFacturasCambiadas({ ...servicio, facturas: facturasActualizadas });
+    } catch {
+      setErrorFactura('No se ha podido eliminar la factura.');
+    } finally {
+      setBorrandoId(null);
     }
   }
 
@@ -149,30 +174,43 @@ export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onElim
 
       <div style={{ marginBottom: 26 }}>
         <div className="field__label" style={{ marginBottom: 8 }}>
-          Factura adjunta
+          Facturas adjuntas {facturas.length > 0 && `(${facturas.length})`}
         </div>
-        {servicio.tieneFacturaAdjunta ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', border: '1px solid var(--line)', borderRadius: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--teal-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal-dark)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 4h6l5 5v11H8z" />
-                <path d="M14 4v5h5" />
-              </svg>
-            </div>
-            <div style={{ flexGrow: 1, fontSize: 13, color: 'var(--ink)' }}>Factura subida</div>
-            <button type="button" className="btn btn--ghost" style={{ padding: '7px 12px', fontSize: 12.5 }} onClick={verFactura}>
-              Ver
-            </button>
-            <button type="button" className="btn btn--ghost" style={{ padding: '7px 12px', fontSize: 12.5 }} onClick={() => fileInputRef.current?.click()} disabled={subiendo}>
-              Reemplazar
-            </button>
+
+        {facturas.length > 0 && (
+          <div className="factura-lista">
+            {facturas.map((f) => (
+              <div key={f.id} className="factura-lista__item">
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--teal-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--teal-dark)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 4h6l5 5v11H8z" />
+                    <path d="M14 4v5h5" />
+                  </svg>
+                </div>
+                <span className="factura-lista__nombre" title={f.nombreOriginal}>
+                  {f.nombreOriginal}
+                </span>
+                <button type="button" className="btn btn--ghost" style={{ padding: '7px 12px', fontSize: 12.5 }} onClick={() => verFactura(f.id)}>
+                  Ver
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => eliminarFactura(f.id)}
+                  disabled={borrandoId === f.id}
+                  aria-label="Eliminar factura"
+                >
+                  <IconTrash />
+                </button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <button type="button" className="btn btn--ghost" onClick={() => fileInputRef.current?.click()} disabled={subiendo}>
-            {subiendo ? 'Subiendo...' : 'Subir factura'}
-          </button>
         )}
-        <input ref={fileInputRef} type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={subirFactura} />
+
+        <button type="button" className="btn btn--ghost" onClick={() => fileInputRef.current?.click()} disabled={subiendo}>
+          {subiendo ? 'Subiendo...' : 'Añadir factura'}
+        </button>
+        <input ref={fileInputRef} type="file" accept="application/pdf,image/*" multiple style={{ display: 'none' }} onChange={subirFactura} />
         {errorFactura && <div className="field-error">{errorFactura}</div>}
       </div>
 
@@ -199,5 +237,13 @@ function DetalleCampo({ label, valor, destacado }: { label: string; valor: strin
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>{label}</div>
       <div style={{ fontSize: destacado ? 16 : 14, fontWeight: destacado ? 800 : 600, color: destacado ? 'var(--teal-dark)' : 'var(--ink)' }}>{valor}</div>
     </div>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.2A2 2 0 0 1 14.2 21H9.8a2 2 0 0 1-2-1.8L7 7" />
+    </svg>
   );
 }

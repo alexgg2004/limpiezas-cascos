@@ -132,3 +132,53 @@
   font-size: 16px;
   color: var(--teal-dark);
 }
+
+.factura-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.factura-lista__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.factura-lista__item--pendiente {
+  border-style: dashed;
+  background: var(--bg);
+}
+
+.factura-lista__icono {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--teal-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.factura-lista__nombre {
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.factura-lista__badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
