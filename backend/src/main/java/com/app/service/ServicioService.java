@@ -1,5 +1,6 @@
 package com.app.service;
 
+import com.app.dto.FacturaInfoResponseDto;
 import com.app.dto.ServicioDtos;
 import com.app.dto.UsuarioDtos;
 import com.app.model.EstadoServicio;
@@ -9,21 +10,11 @@ import com.app.model.Usuario;
 import com.app.repository.ServicioRepository;
 import com.app.repository.SitioLimpiezaRepository;
 import com.app.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,24 +26,15 @@ public class ServicioService {
     private final ServicioRepository servicioRepository;
     private final SitioLimpiezaRepository sitioRepository;
     private final UsuarioRepository usuarioRepository;
-    private final Path directorioSubidas;
 
     public ServicioService(
             ServicioRepository servicioRepository,
             SitioLimpiezaRepository sitioRepository,
-            UsuarioRepository usuarioRepository,
-            @Value("${app.upload.dir:uploads/facturas}") String uploadDir
+            UsuarioRepository usuarioRepository
     ) {
         this.servicioRepository = servicioRepository;
         this.sitioRepository = sitioRepository;
         this.usuarioRepository = usuarioRepository;
-        this.directorioSubidas = Paths.get(uploadDir).toAbsolutePath().normalize();
-
-        try {
-            Files.createDirectories(this.directorioSubidas);
-        } catch (IOException e) {
-            throw new RuntimeException("No se pudo crear el directorio de subidas", e);
-        }
     }
 
     @Transactional
@@ -153,49 +135,6 @@ public class ServicioService {
     }
 
     @Transactional
-    public void subirFactura(Usuario usuario, Long servicioId, MultipartFile archivo) {
-        if (archivo.isEmpty()) {
-            throw new RuntimeException("El archivo está vacío");
-        }
-
-        Servicio servicio = obtenerServicioOr404(servicioId);
-
-        try {
-            String extension = ".pdf";
-            String nombreUnico = UUID.randomUUID() + "_" + archivo.getOriginalFilename();
-            Path destino = this.directorioSubidas.resolve(nombreUnico);
-
-            Files.copy(archivo.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
-
-            servicio.setRutaFactura(destino.toString());
-            servicioRepository.save(servicio);
-        } catch (IOException e) {
-            throw new RuntimeException("Error al guardar el archivo en disco", e);
-        }
-    }
-
-    public Resource descargarFactura(Usuario usuario, Long servicioId) {
-        Servicio servicio = obtenerServicioOr404(servicioId);
-
-        if (servicio.getRutaFactura() == null) {
-            throw new RuntimeException("Este servicio no tiene una factura adjunta");
-        }
-
-        try {
-            Path rutaArchivo = Paths.get(servicio.getRutaFactura());
-            Resource recurso = new UrlResource(rutaArchivo.toUri());
-
-            if (recurso.exists() && recurso.isReadable()) {
-                return recurso;
-            } else {
-                throw new RuntimeException("El archivo no existe o no se puede leer");
-            }
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Ruta de archivo no válida", e);
-        }
-    }
-
-    @Transactional
     public void eliminarServicio(Usuario usuario, Long servicioId) {
         Servicio servicio = obtenerServicioOr404(servicioId);
         servicioRepository.delete(servicio);
@@ -228,6 +167,11 @@ public class ServicioService {
                 .map(u -> new UsuarioDtos.UsuarioResumenDto(u.getId(), u.getNombreCompleto(), u.getEmail()))
                 .toList();
 
+        List<FacturaInfoResponseDto> facturas = s.getFacturas().stream()
+                .sorted(Comparator.comparing(com.app.model.FacturaAdjunta::getFechaSubida).reversed())
+                .map(f -> new FacturaInfoResponseDto(f.getId(), f.getNombreOriginal(), f.getTamanoBytes(), f.getFechaSubida()))
+                .toList();
+
         return new ServicioDtos.ServicioResponseDto(
                 s.getId(),
                 s.getFecha(),
@@ -238,7 +182,7 @@ public class ServicioService {
                 s.getEstado(),
                 s.getSitio().getId(),
                 s.getSitio().getNombreDescriptivo(),
-                s.getFacturaAdjunta() != null,
+                facturas,
                 asignados
         );
     }

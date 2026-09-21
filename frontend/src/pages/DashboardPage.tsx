@@ -3,13 +3,16 @@ import { clientesApi } from '../api/clientes';
 import { sitiosApi } from '../api/sitios';
 import { serviciosApi } from '../api/servicios';
 import { EstadoBadge } from '../components/ui/EstadoBadge';
+import { CalendarioMensual } from '../components/dashboard/CalendarioMensual';
+import { ServicioFormModal } from '../components/servicios/ServicioFormModal';
+import { fechaLocalIso } from '../utils/fecha';
 import type { ClienteResponseDto, ServicioResponseDto, SitioLimpiezaResponseDto } from '../types';
 import './DashboardPage.css';
 
 // Fecha de referencia calculada una sola vez al cargar el módulo (no en cada render).
 const ahora = Date.now();
-const hoy = new Date(ahora).toISOString().slice(0, 10);
-const enUnaSemana = new Date(ahora + 7 * 86400000).toISOString().slice(0, 10);
+const hoy = fechaLocalIso(new Date(ahora));
+const enUnaSemana = fechaLocalIso(new Date(ahora + 7 * 86400000));
 const fechaLegible = new Date(ahora).toLocaleDateString('es-ES', {
   weekday: 'long',
   day: 'numeric',
@@ -23,6 +26,8 @@ export function DashboardPage() {
   const [servicios, setServicios] = useState<ServicioResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const [fechaNuevoServicio, setFechaNuevoServicio] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([clientesApi.listar(), sitiosApi.listar(), serviciosApi.listar()])
@@ -63,37 +68,40 @@ export function DashboardPage() {
             <StatCard label="Sitios registrados" value={sitios.length} />
           </div>
 
-          <div className="card dashboard__upcoming">
-            <div className="dashboard__upcoming-header">Próximos servicios</div>
-            {proximosServicios.length === 0 ? (
-              <div className="state-message">No hay servicios pendientes próximos.</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Sitio</th>
-                    <th>Horas</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <div className="dashboard__main">
+            <CalendarioMensual servicios={servicios} onDiaClick={setFechaNuevoServicio} />
+
+            <div className="card dashboard__upcoming">
+              <div className="dashboard__upcoming-header">Próximos servicios</div>
+              {proximosServicios.length === 0 ? (
+                <div className="state-message">No hay servicios pendientes próximos.</div>
+              ) : (
+                <div className="dashboard__upcoming-list">
                   {proximosServicios.map((s) => (
-                    <tr key={s.id}>
-                      <td>{s.fecha}</td>
-                      <td>{s.nombreSitio}</td>
-                      <td>{s.horas ?? '—'} h</td>
-                      <td>
-                        <EstadoBadge estado={s.estado} />
-                      </td>
-                    </tr>
+                    <div key={s.id} className="dashboard__upcoming-item">
+                      <div className="dashboard__upcoming-item-main">
+                        <div className="dashboard__upcoming-item-sitio">{s.nombreSitio}</div>
+                        <div className="dashboard__upcoming-item-fecha">
+                          {s.fecha} · {s.horas ?? '—'} h
+                        </div>
+                      </div>
+                      <EstadoBadge estado={s.estado} />
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
+
+      <ServicioFormModal
+        open={fechaNuevoServicio !== null}
+        servicio={null}
+        fechaInicial={fechaNuevoServicio ?? undefined}
+        onClose={() => setFechaNuevoServicio(null)}
+        onSaved={(s) => setServicios((prev) => [...prev, s])}
+      />
     </div>
   );
 }

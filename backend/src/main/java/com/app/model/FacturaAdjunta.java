@@ -26,7 +26,8 @@ public class FacturaAdjunta {
     @Builder.Default
     private LocalDateTime fechaSubida = LocalDateTime.now();
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "servicio_id", nullable = false, unique = true)
+    /** Varias facturas pueden pertenecer al mismo servicio. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "servicio_id", nullable = false)
     private Servicio servicio;
 }

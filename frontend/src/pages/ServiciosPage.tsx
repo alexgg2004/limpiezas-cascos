@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { serviciosApi } from '../api/servicios';
+import { usuariosApi } from '../api/usuarios';
 import { EstadoBadge } from '../components/ui/EstadoBadge';
 import { ServicioFormModal } from '../components/servicios/ServicioFormModal';
 import { ServicioDetalleModal } from '../components/servicios/ServicioDetalleModal';
 import { EliminarServicioDialog } from '../components/servicios/EliminarServicioDialog';
-import type { ServicioResponseDto } from '../types';
+import type { ServicioResponseDto, UsuarioResumenDto } from '../types';
 
 export function ServiciosPage() {
   const [servicios, setServicios] = useState<ServicioResponseDto[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioResumenDto[]>([]);
+  const [asignadoFiltro, setAsignadoFiltro] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -22,7 +25,14 @@ export function ServiciosPage() {
       .then(setServicios)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+    usuariosApi.listar().then(setUsuarios).catch(() => setUsuarios([]));
   }, []);
+
+  const serviciosFiltrados = useMemo(() => {
+    if (!asignadoFiltro) return servicios;
+    const id = Number(asignadoFiltro);
+    return servicios.filter((s) => s.asignados.some((a) => a.id === id));
+  }, [servicios, asignadoFiltro]);
 
   function handleSaved(servicio: ServicioResponseDto) {
     setServicios((prev) => {
@@ -41,7 +51,9 @@ export function ServiciosPage() {
         <div>
           <div className="page-title">Servicios</div>
           <div className="page-subtitle">
-            {loading ? 'Cargando...' : `${servicios.length} partes de servicio`}
+            {loading
+              ? 'Cargando...'
+              : `${serviciosFiltrados.length} de ${servicios.length} partes de servicio`}
           </div>
         </div>
         <button type="button" className="btn btn--primary" onClick={() => setModalNuevoAbierto(true)}>
@@ -50,13 +62,40 @@ export function ServiciosPage() {
         </button>
       </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>Asignado a</span>
+          <select
+            value={asignadoFiltro}
+            onChange={(e) => setAsignadoFiltro(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1.5px solid var(--line)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 13,
+              color: 'var(--ink)',
+              background: 'var(--surface)',
+            }}
+          >
+            <option value="">Todos</option>
+            {usuarios.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombreCompleto || u.email}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       <div className="card">
         {loading && <div className="state-message">Cargando servicios...</div>}
         {error && <div className="state-message state-message--error">No se han podido cargar los servicios.</div>}
-        {!loading && !error && servicios.length === 0 && (
-          <div className="state-message">Todavía no hay servicios registrados.</div>
+        {!loading && !error && serviciosFiltrados.length === 0 && (
+          <div className="state-message">
+            {servicios.length === 0 ? 'Todavía no hay servicios registrados.' : 'No hay servicios que coincidan con el filtro.'}
+          </div>
         )}
-        {!loading && !error && servicios.length > 0 && (
+        {!loading && !error && serviciosFiltrados.length > 0 && (
           <table className="data-table">
             <thead>
               <tr>
@@ -66,12 +105,12 @@ export function ServiciosPage() {
                 <th>Importe</th>
                 <th>Estado</th>
                 <th>Asignados</th>
-                <th>Factura</th>
+                <th>Facturas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {servicios.map((s) => (
+              {serviciosFiltrados.map((s) => (
                 <tr key={s.id}>
                   <td>{s.fecha}</td>
                   <td>{s.nombreSitio}</td>
@@ -87,7 +126,7 @@ export function ServiciosPage() {
                       <span style={{ color: 'var(--ink-3)' }}>Sin asignar</span>
                     )}
                   </td>
-                  <td>{s.tieneFacturaAdjunta ? 'Sí' : '—'}</td>
+                  <td>{s.facturas.length > 0 ? s.facturas.length : '—'}</td>
                   <td>
                     <div className="row-actions">
                       <button type="button" className="icon-btn" title="Ver detalle" onClick={() => setServicioDetalle(s)}>
@@ -129,7 +168,7 @@ export function ServiciosPage() {
           setServicioEliminando(servicioDetalle);
           setServicioDetalle(null);
         }}
-        onFacturaSubida={(s) => {
+        onFacturasCambiadas={(s) => {
           handleSaved(s);
           setServicioDetalle(s);
         }}

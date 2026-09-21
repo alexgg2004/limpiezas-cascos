@@ -10,6 +10,12 @@ API REST en Spring Boot para la gestión de clientes, sitios de limpieza y parte
 - Verificación de ID tokens de Google (`google-api-client`)
 - `ddl-auto=update` — Hibernate crea/actualiza el esquema solo, no hay migraciones versionadas (Flyway/Liquibase)
 
+**Nota sobre `ddl-auto=update`**: solo añade tablas/columnas, nunca quita restricciones. Si tu base de datos viene de antes del 2026-09-20 (cuando `facturas_adjuntas.servicio_id` era `UNIQUE`, porque un servicio solo tenía una factura), tienes que quitar esa restricción a mano una vez antes de que una segunda factura en el mismo servicio deje de fallar:
+```sql
+ALTER TABLE facturas_adjuntas DROP CONSTRAINT ukrb3rspn4ncqmvgm7ps5ueog3k;
+-- (el nombre puede variar; consulta \d facturas_adjuntas si el ALTER falla)
+```
+
 ## Puesta en marcha
 
 **Con Docker (recomendado)** — desde la raíz del repositorio, no desde aquí:
@@ -58,8 +64,8 @@ Sin variables de entorno definidas, `spring.datasource.url` etc. quedan vacías 
 | `Usuario` | `email` (único), `password` (hash bcrypt), `nombreCompleto`, `nifCif`, `rol` | — |
 | `Cliente` | `nombre`, `nifCif`, `telefono`, `email` | `usuario` (creador, N:1) · `sitios` (1:N) |
 | `SitioLimpieza` | `nombreDescriptivo`, `direccion`, `codigoPostal`, `ciudad`, `latitud`, `longitud`, `instruccionesAcceso` | `cliente` (N:1) |
-| `Servicio` | `fecha`, `horas`, `precioHora`, `totalImporte`, `observaciones`, `estado` (`PENDIENTE`\|`REALIZADO`\|`CANCELADO`), `rutaFactura` | `sitio` (N:1) · `facturaAdjunta` (1:1) · `asignados` (N:M con `Usuario`, tabla `servicios_asignados`) |
-| `FacturaAdjunta` | `nombreOriginal`, `nombreGuardado`, `tipoContenido`, `tamanoBytes`, `fechaSubida` | `servicio` (1:1) |
+| `Servicio` | `fecha`, `horas`, `precioHora`, `totalImporte`, `observaciones`, `estado` (`PENDIENTE`\|`REALIZADO`\|`CANCELADO`) | `sitio` (N:1) · `facturas` (1:N) · `asignados` (N:M con `Usuario`, tabla `servicios_asignados`) |
+| `FacturaAdjunta` | `nombreOriginal`, `nombreGuardado`, `tipoContenido`, `tamanoBytes`, `fechaSubida` | `servicio` (N:1) — un servicio puede tener varias |
 | `CorreoPermitido` | `email` (único), `fechaAlta` | — (lista blanca de Google, ver abajo) |
 
 `totalImporte` se recalcula en el backend como `horas × precioHora` — no se toma del valor que mande el cliente.
@@ -108,15 +114,28 @@ Todos los endpoints están bajo `/api`. Salvo los de `/api/auth`, todos exigen `
 | POST | `/api/servicios` | `ServicioRequestDto` | |
 | GET | `/api/servicios/{id}` | — | |
 | PUT | `/api/servicios/{id}` | `ServicioRequestDto` | Sustituye por completo la lista de `asignados` |
-| DELETE | `/api/servicios/{id}` | — | Sin restricciones (cascada borra su `FacturaAdjunta` si tiene) |
-| POST | `/api/servicios/{id}/factura` | multipart `archivo` | Sustituye la factura anterior si ya había una |
-| GET | `/api/servicios/{id}/factura` | — | Devuelve el binario (PDF/imagen) para visualizar |
+| DELETE | `/api/servicios/{id}` | — | Sin restricciones. Cascada borra sus filas de `FacturaAdjunta` en BD, pero **no** borra los archivos del disco (ver aviso abajo) |
 
 `ServicioRequestDto`: `fecha` (obligatoria), `horas`, `precioHora`, `observaciones`, `estado` (obligatorio), `sitioId` (obligatorio), `asignadosIds` (lista de IDs de `Usuario`, opcional — vacía o ausente = sin asignar).
 
-`ServicioResponseDto` añade `totalImporte` (calculado), `nombreSitio`, `tieneFacturaAdjunta` (bool) y `asignados` (lista de `{ id, nombreCompleto, email }`).
+`ServicioResponseDto` añade `totalImporte` (calculado), `nombreSitio`, `facturas` (lista de `FacturaInfoResponseDto`, puede estar vacía) y `asignados` (lista de `{ id, nombreCompleto, email }`).
 
 `estado` como filtro en el GET se valida contra el enum; un valor no reconocido responde `400`.
+
+⚠️ Borrar un servicio (`DELETE /api/servicios/{id}`) elimina en cascada sus filas de `facturas_adjuntas` en base de datos, pero no llama a `FileStorageService.eliminarArchivo` — los ficheros PDF/imagen correspondientes quedan huérfanos en `uploads/facturas`. Solo se limpian del disco cuando se borra una factura individualmente (`DELETE /api/servicios/{id}/facturas/{facturaId}`). Ya existía esta limitación antes de que un servicio pudiera tener varias facturas; no la he corregido porque no se pidió.
+
+### Facturas de un servicio (`/api/servicios/{servicioId}/facturas`)
+
+Un servicio puede tener **varias** facturas adjuntas (antes era una única factura que se sustituía al subir otra).
+
+| Método | Ruta | Body | Notas |
+|---|---|---|---|
+| GET | `/api/servicios/{servicioId}/facturas` | — | Lista, más reciente primero |
+| POST | `/api/servicios/{servicioId}/facturas` | multipart `archivo` | Añade una factura más; no sustituye las existentes |
+| GET | `/api/servicios/{servicioId}/facturas/{facturaId}` | — | Devuelve el binario (PDF/imagen) de esa factura concreta, para visualizar |
+| DELETE | `/api/servicios/{servicioId}/facturas/{facturaId}` | — | Borra esa factura (fila en BD + archivo en disco) |
+
+`FacturaInfoResponseDto`: `id`, `nombreOriginal`, `tamanoBytes`, `fechaSubida`.
 
 ### Correos permitidos — lista blanca de Google (`/api/correos-permitidos`)
 

@@ -1,0 +1,179 @@
+.calendario {
+  padding: 18px 22px 22px 22px;
+}
+
+.calendario__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.calendario__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendario__nav-btn {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.calendario__mes {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  min-width: 150px;
+  text-align: center;
+}
+
+.calendario__hoy {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--teal-100);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.calendario__leyenda {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.calendario__leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.calendario__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calendario__dot--pendiente {
+  background: var(--amber);
+}
+
+.calendario__dot--realizado {
+  background: var(--green);
+}
+
+.calendario__dot--cancelado {
+  background: var(--red);
+}
+
+.calendario__dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 0 2px 8px 2px;
+}
+
+.calendario__dias-semana div {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.calendario__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.calendario__celda {
+  min-height: 78px;
+  padding: 6px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.calendario__celda--fuera {
+  background: var(--bg);
+}
+
+.calendario__celda--fuera .calendario__numero {
+  color: var(--ink-3);
+}
+
+.calendario__celda--hoy {
+  background: var(--teal-100);
+}
+
+.calendario__celda--clicable {
+  cursor: pointer;
+}
+
+.calendario__celda--clicable:hover {
+  background: var(--teal-100);
+}
+
+.calendario__numero {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--ink);
+}
+
+.calendario__celda--hoy .calendario__numero {
+  background: var(--teal);
+  color: #fff;
+  font-weight: 800;
+}
+
+.calendario__chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendario__chip--pendiente {
+  background: var(--amber-100);
+  color: var(--amber-text);
+}
+
+.calendario__chip--realizado {
+  background: var(--green-100);
+  color: var(--green-text);
+}
+
+.calendario__chip--cancelado {
+  background: var(--red-100);
+  color: var(--red-text);
+}
+
+.calendario__extra {
+  font-size: 9.5px;
+  color: var(--ink-3);
+  padding-left: 1px;
+}

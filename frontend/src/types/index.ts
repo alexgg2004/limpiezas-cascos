@@ -101,7 +101,7 @@ export interface ServicioResponseDto {
   estado: EstadoServicio;
   sitioId: number;
   nombreSitio: string;
-  tieneFacturaAdjunta: boolean;
+  facturas: FacturaInfoResponseDto[];
   asignados: UsuarioResumenDto[];
 }
 
