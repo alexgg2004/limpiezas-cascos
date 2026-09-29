@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { sitiosApi } from '../api/sitios';
 import { SitioFormModal } from '../components/sitios/SitioFormModal';
 import { SitioDetalleModal } from '../components/sitios/SitioDetalleModal';
 import { EliminarSitioDialog } from '../components/sitios/EliminarSitioDialog';
+import { useSearch } from '../hooks/useSearch';
 import type { SitioLimpiezaResponseDto } from '../types';
 
 export function SitiosPage() {
+  const { searchTerm } = useSearch();
   const [sitios, setSitios] = useState<SitioLimpiezaResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -22,6 +24,14 @@ export function SitiosPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  const sitiosFiltrados = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return sitios;
+    return sitios.filter((s) =>
+      [s.nombreDescriptivo, s.nombreCliente, s.direccion, s.ciudad].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [sitios, searchTerm]);
 
   function handleSaved(sitio: SitioLimpiezaResponseDto) {
     setSitios((prev) => {
@@ -40,7 +50,11 @@ export function SitiosPage() {
         <div>
           <div className="page-title">Sitios de limpieza</div>
           <div className="page-subtitle">
-            {loading ? 'Cargando...' : `${sitios.length} sitios registrados`}
+            {loading
+              ? 'Cargando...'
+              : searchTerm.trim()
+                ? `${sitiosFiltrados.length} de ${sitios.length} sitios`
+                : `${sitios.length} sitios registrados`}
           </div>
         </div>
         <button type="button" className="btn btn--primary" onClick={() => setModalNuevoAbierto(true)}>
@@ -55,7 +69,11 @@ export function SitiosPage() {
         {!loading && !error && sitios.length === 0 && (
           <div className="state-message">Todavía no hay sitios de limpieza registrados.</div>
         )}
-        {!loading && !error && sitios.length > 0 && (
+        {!loading && !error && sitios.length > 0 && sitiosFiltrados.length === 0 && (
+          <div className="state-message">No hay sitios que coincidan con la búsqueda.</div>
+        )}
+        {!loading && !error && sitiosFiltrados.length > 0 && (
+          <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
@@ -67,7 +85,7 @@ export function SitiosPage() {
               </tr>
             </thead>
             <tbody>
-              {sitios.map((s) => (
+              {sitiosFiltrados.map((s) => (
                 <tr key={s.id}>
                   <td>{s.nombreDescriptivo}</td>
                   <td>{s.nombreCliente}</td>
@@ -87,6 +105,7 @@ export function SitiosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

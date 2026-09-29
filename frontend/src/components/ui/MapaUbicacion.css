@@ -5,37 +5,46 @@
   overflow: hidden;
   border: 1px solid var(--line);
   font-family: var(--font-body);
+}
+
+.mapa-ubicacion--fallback {
   background-color: oklch(93% 0.02 150);
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 36px, oklch(88% 0.015 200 / 55%) 36px, oklch(88% 0.015 200 / 55%) 38px),
     repeating-linear-gradient(90deg, transparent, transparent 52px, oklch(88% 0.015 200 / 55%) 52px, oklch(88% 0.015 200 / 55%) 54px);
 }
 
-.mapa-ubicacion__zoom {
+.mapa-ubicacion__buscador {
   position: absolute;
   top: 10px;
+  left: 10px;
   right: 10px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px oklch(20% 0.02 240 / 18%);
-}
-
-.mapa-ubicacion__zoom-btn {
-  width: 26px;
-  height: 26px;
-  background: #fff;
-  color: var(--ink-2);
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  border-bottom: 1px solid var(--line);
+  gap: 8px;
+  background: #fff;
+  padding: 9px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px oklch(20% 0.02 240 / 20%);
 }
 
-.mapa-ubicacion__zoom-btn:last-child {
-  border-bottom: none;
+.mapa-ubicacion__buscador svg {
+  flex-shrink: 0;
+}
+
+.mapa-ubicacion__buscador input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+}
+
+.mapa-ubicacion__buscador input::placeholder {
+  color: var(--ink-3);
 }
 
 .mapa-ubicacion__hint {

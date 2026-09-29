@@ -9,58 +9,52 @@ const NAV_ITEMS = [
   { to: '/servicios', label: 'Servicios', icon: IconClipboard },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, logout } = useAuth();
   const iniciales = getIniciales(user?.nombreCompleto || user?.email || '?');
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar__brand">
-        <svg width="26" height="24" viewBox="0 0 28 24" className="sidebar__logo">
-          <path
-            d="M14 2c4.6 6.3 8 10.9 8 15A8 8 0 1 1 6 17c0-4.1 3.4-8.7 8-15Z"
-            fill="currentColor"
-          />
-          <circle cx="22" cy="4.5" r="2.1" fill="var(--green)" />
-        </svg>
-        <div className="sidebar__wordmark">
-          Limpiezas
-          <br />
-          <span>Cascos</span>
-        </div>
-      </div>
+    <>
+      <div className={`sidebar-overlay${open ? ' sidebar-overlay--visible' : ''}`} onClick={onClose} />
 
-      <nav className="sidebar__nav">
-        {NAV_ITEMS.map(({ to, label, end, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) => `sidebar__item${isActive ? ' sidebar__item--active' : ''}`}
+      <aside className={`sidebar${open ? ' sidebar--open' : ''}`}>
+        <div className="sidebar__brand">
+          <img src="/icon.png" alt="Limpiezas Cascos" className="sidebar__logo" />
+        </div>
+
+        <nav className="sidebar__nav">
+          {NAV_ITEMS.map(({ to, label, end, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={onClose}
+              className={({ isActive }) => `sidebar__item${isActive ? ' sidebar__item--active' : ''}`}
+            >
+              <Icon />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="sidebar__user">
+          <div className="sidebar__avatar">{iniciales}</div>
+          <div className="sidebar__user-info">
+            <div className="sidebar__user-name">{user?.nombreCompleto || user?.email}</div>
+            <div className="sidebar__user-role">Administrador</div>
+          </div>
+          <button
+            type="button"
+            className="sidebar__logout"
+            onClick={logout}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
           >
-            <Icon />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="sidebar__user">
-        <div className="sidebar__avatar">{iniciales}</div>
-        <div className="sidebar__user-info">
-          <div className="sidebar__user-name">{user?.nombreCompleto || user?.email}</div>
-          <div className="sidebar__user-role">Administrador</div>
+            <IconLogout />
+          </button>
         </div>
-        <button
-          type="button"
-          className="sidebar__logout"
-          onClick={logout}
-          aria-label="Cerrar sesión"
-          title="Cerrar sesión"
-        >
-          <IconLogout />
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 

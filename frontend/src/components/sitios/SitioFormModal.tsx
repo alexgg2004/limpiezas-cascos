@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Modal } from '../ui/Modal';
-import { MapaUbicacion } from '../ui/MapaUbicacion';
+import { MapaUbicacion, type DireccionDetectada } from '../ui/MapaUbicacion';
 import { sitiosApi } from '../../api/sitios';
 import { clientesApi } from '../../api/clientes';
 import type { ClienteResponseDto, SitioLimpiezaResponseDto } from '../../types';
@@ -29,9 +30,19 @@ export function SitioFormModal({ open, sitio, clienteFijo, onClose, onSaved }: P
   const [clientes, setClientes] = useState<ClienteResponseDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [geocodificando, setGeocodificando] = useState(false);
+
+  const geocodingLib = useMapsLibrary('geocoding');
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const suprimirGeocode = useRef(false);
+
+  useEffect(() => {
+    if (geocodingLib) geocoderRef.current = new geocodingLib.Geocoder();
+  }, [geocodingLib]);
 
   useEffect(() => {
     if (open) {
+      suprimirGeocode.current = true; // el próximo cambio de dirección viene de este reset, no del usuario
       clientesApi.listar().then(setClientes).catch(() => setClientes([]));
       setForm(
         sitio
@@ -51,8 +62,51 @@ export function SitioFormModal({ open, sitio, clienteFijo, onClose, onSaved }: P
     }
   }, [open, sitio, clienteFijo]);
 
+  // Geocodifica automáticamente la dirección (con debounce) en cuanto el usuario
+  // termina de escribir dirección/ciudad/C.P., para no pedir latitud/longitud a mano.
+  useEffect(() => {
+    if (!open) return;
+    if (suprimirGeocode.current) {
+      suprimirGeocode.current = false;
+      return;
+    }
+    const direccion = form.direccion.trim();
+    if (!direccion || !geocoderRef.current) return;
+
+    const query = [direccion, form.codigoPostal.trim(), form.ciudad.trim()].filter(Boolean).join(', ');
+
+    setGeocodificando(true);
+    const timer = setTimeout(() => {
+      geocoderRef.current!.geocode({ address: query }, (results, status) => {
+        setGeocodificando(false);
+        if (status === 'OK' && results && results[0]) {
+          const loc = results[0].geometry.location;
+          setForm((prev) => ({ ...prev, latitud: String(loc.lat()), longitud: String(loc.lng()) }));
+        }
+      });
+    }, 900);
+
+    return () => {
+      clearTimeout(timer);
+      setGeocodificando(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, form.direccion, form.ciudad, form.codigoPostal, geocodingLib]);
+
   const lat = form.latitud.trim() !== '' ? Number(form.latitud) : null;
   const lng = form.longitud.trim() !== '' ? Number(form.longitud) : null;
+
+  function handleUbicacionChange(nuevoLat: number, nuevoLng: number, direccion?: DireccionDetectada) {
+    suprimirGeocode.current = true; // este cambio ya trae coordenadas: no lo vuelvas a geocodificar
+    setForm((prev) => ({
+      ...prev,
+      latitud: String(nuevoLat),
+      longitud: String(nuevoLng),
+      direccion: direccion?.direccion ?? prev.direccion,
+      ciudad: direccion?.ciudad ?? prev.ciudad,
+      codigoPostal: direccion?.codigoPostal ?? prev.codigoPostal,
+    }));
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -67,7 +121,7 @@ export function SitioFormModal({ open, sitio, clienteFijo, onClose, onSaved }: P
       return;
     }
     if (form.latitud.trim() === '' || form.longitud.trim() === '' || Number.isNaN(latitud) || Number.isNaN(longitud)) {
-      setError('Introduce una latitud y una longitud válidas.');
+      setError('No se ha podido ubicar la dirección en el mapa. Ajusta la dirección o marca el punto directamente en el mapa.');
       return;
     }
 
@@ -149,18 +203,12 @@ export function SitioFormModal({ open, sitio, clienteFijo, onClose, onSaved }: P
           <span>
             Ubicación <span className="field__required">*</span>
           </span>
-          <MapaUbicacion lat={lat} lng={lng} editable height={170} />
-        </div>
-
-        <div className="field-row">
-          <label className="field">
-            <span>Latitud</span>
-            <input type="text" inputMode="decimal" value={form.latitud} onChange={(e) => setForm({ ...form, latitud: e.target.value })} placeholder="40.4168" />
-          </label>
-          <label className="field">
-            <span>Longitud</span>
-            <input type="text" inputMode="decimal" value={form.longitud} onChange={(e) => setForm({ ...form, longitud: e.target.value })} placeholder="-3.7038" />
-          </label>
+          <div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>
+            {geocodificando
+              ? 'Localizando dirección en el mapa...'
+              : 'Se localiza sola al escribir la dirección. También puedes arrastrar el pin o hacer clic en el mapa para ajustarla.'}
+          </div>
+          <MapaUbicacion lat={lat} lng={lng} mode="edit" onChange={handleUbicacionChange} height={220} />
         </div>
 
         <label className="field">

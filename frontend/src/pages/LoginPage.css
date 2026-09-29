@@ -15,18 +15,10 @@
   padding: 56px;
 }
 
-.login__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 17px;
-}
-
-.login__brand em {
-  color: var(--green);
-  font-style: normal;
+.login__brand img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
 }
 
 .login__pitch {
@@ -178,4 +170,46 @@
 .login__submit:disabled {
   opacity: 0.7;
   cursor: default;
+}
+
+@media (max-width: 860px) {
+  .login {
+    flex-direction: column;
+  }
+
+  .login__panel {
+    width: 100%;
+    min-width: 0;
+    padding: 32px 24px;
+  }
+
+  .login__pitch h1 {
+    font-size: 24px;
+  }
+
+  .login__pitch p {
+    font-size: 13.5px;
+  }
+
+  .login__form-side {
+    padding: 24px 20px 40px 20px;
+  }
+
+  .login__card {
+    padding: 28px 22px;
+  }
+}
+
+@media (max-width: 420px) {
+  .login__panel {
+    padding: 24px 20px;
+  }
+
+  .login__pitch {
+    display: none;
+  }
+
+  .login__footer {
+    display: none;
+  }
 }

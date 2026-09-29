@@ -1,16 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { serviciosApi } from '../api/servicios';
 import { usuariosApi } from '../api/usuarios';
+import { clientesApi } from '../api/clientes';
+import { sitiosApi } from '../api/sitios';
 import { EstadoBadge } from '../components/ui/EstadoBadge';
+import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { ServicioFormModal } from '../components/servicios/ServicioFormModal';
 import { ServicioDetalleModal } from '../components/servicios/ServicioDetalleModal';
 import { EliminarServicioDialog } from '../components/servicios/EliminarServicioDialog';
-import type { ServicioResponseDto, UsuarioResumenDto } from '../types';
+import { useSearch } from '../hooks/useSearch';
+import type { ClienteResponseDto, ServicioResponseDto, SitioLimpiezaResponseDto, UsuarioResumenDto } from '../types';
 
 export function ServiciosPage() {
+  const { searchTerm } = useSearch();
   const [servicios, setServicios] = useState<ServicioResponseDto[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioResumenDto[]>([]);
+  const [clientes, setClientes] = useState<ClienteResponseDto[]>([]);
+  const [sitios, setSitios] = useState<SitioLimpiezaResponseDto[]>([]);
   const [asignadoFiltro, setAsignadoFiltro] = useState('');
+  const [clienteFiltro, setClienteFiltro] = useState('');
+  const [sitioFiltro, setSitioFiltro] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -26,13 +35,54 @@ export function ServiciosPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
     usuariosApi.listar().then(setUsuarios).catch(() => setUsuarios([]));
+    clientesApi.listar().then(setClientes).catch(() => setClientes([]));
+    sitiosApi.listar().then(setSitios).catch(() => setSitios([]));
   }, []);
 
+  const sitiosFiltrablesOpciones = useMemo(() => {
+    const base = clienteFiltro ? sitios.filter((s) => String(s.clienteId) === clienteFiltro) : sitios;
+    return base.map((s) => ({ value: String(s.id), label: s.nombreDescriptivo, sublabel: s.nombreCliente }));
+  }, [sitios, clienteFiltro]);
+
+  function handleClienteFiltroChange(value: string) {
+    setClienteFiltro(value);
+    if (value && sitioFiltro) {
+      const sitioActual = sitios.find((s) => String(s.id) === sitioFiltro);
+      if (!sitioActual || String(sitioActual.clienteId) !== value) {
+        setSitioFiltro('');
+      }
+    }
+  }
+
   const serviciosFiltrados = useMemo(() => {
-    if (!asignadoFiltro) return servicios;
-    const id = Number(asignadoFiltro);
-    return servicios.filter((s) => s.asignados.some((a) => a.id === id));
-  }, [servicios, asignadoFiltro]);
+    let resultado = servicios;
+
+    if (asignadoFiltro) {
+      const id = Number(asignadoFiltro);
+      resultado = resultado.filter((s) => s.asignados.some((a) => a.id === id));
+    }
+
+    if (clienteFiltro) {
+      const id = Number(clienteFiltro);
+      resultado = resultado.filter((s) => s.clienteId === id);
+    }
+
+    if (sitioFiltro) {
+      const id = Number(sitioFiltro);
+      resultado = resultado.filter((s) => s.sitioId === id);
+    }
+
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      resultado = resultado.filter((s) =>
+        [s.nombreSitio, s.nombreCliente, s.estado, s.fecha, ...s.asignados.map((a) => a.nombreCompleto || a.email)].some(
+          (v) => v?.toLowerCase().includes(q),
+        ),
+      );
+    }
+
+    return resultado;
+  }, [servicios, asignadoFiltro, clienteFiltro, sitioFiltro, searchTerm]);
 
   function handleSaved(servicio: ServicioResponseDto) {
     setServicios((prev) => {
@@ -62,28 +112,35 @@ export function ServiciosPage() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>Cliente</span>
+          <SearchableSelect
+            value={clienteFiltro}
+            onChange={handleClienteFiltroChange}
+            options={clientes.map((c) => ({ value: String(c.id), label: c.nombre }))}
+            placeholder="Todos"
+          />
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>Sitio</span>
+          <SearchableSelect
+            value={sitioFiltro}
+            onChange={setSitioFiltro}
+            options={sitiosFiltrablesOpciones}
+            placeholder="Todos"
+          />
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>Asignado a</span>
-          <select
+          <SearchableSelect
             value={asignadoFiltro}
-            onChange={(e) => setAsignadoFiltro(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1.5px solid var(--line)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: 13,
-              color: 'var(--ink)',
-              background: 'var(--surface)',
-            }}
-          >
-            <option value="">Todos</option>
-            {usuarios.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nombreCompleto || u.email}
-              </option>
-            ))}
-          </select>
+            onChange={setAsignadoFiltro}
+            options={usuarios.map((u) => ({ value: String(u.id), label: u.nombreCompleto || u.email }))}
+            placeholder="Todos"
+          />
         </label>
       </div>
 
@@ -96,10 +153,12 @@ export function ServiciosPage() {
           </div>
         )}
         {!loading && !error && serviciosFiltrados.length > 0 && (
+          <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
                 <th>Fecha</th>
+                <th>Cliente</th>
                 <th>Sitio</th>
                 <th>Horas</th>
                 <th>Importe</th>
@@ -113,6 +172,7 @@ export function ServiciosPage() {
               {serviciosFiltrados.map((s) => (
                 <tr key={s.id}>
                   <td>{s.fecha}</td>
+                  <td>{s.nombreCliente}</td>
                   <td>{s.nombreSitio}</td>
                   <td>{s.horas ?? '—'} h</td>
                   <td>{s.totalImporte != null ? `${s.totalImporte.toFixed(2)} €` : '—'}</td>
@@ -141,6 +201,7 @@ export function ServiciosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

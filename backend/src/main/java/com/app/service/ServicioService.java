@@ -182,6 +182,8 @@ public class ServicioService {
                 s.getEstado(),
                 s.getSitio().getId(),
                 s.getSitio().getNombreDescriptivo(),
+                s.getSitio().getCliente().getId(),
+                s.getSitio().getCliente().getNombre(),
                 facturas,
                 asignados
         );

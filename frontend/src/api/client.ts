@@ -18,7 +18,10 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // El backend devuelve 403 (no 401) cuando el token falta, no es válido o ha
+    // caducado, ya que JwtFilter simplemente deja la petición sin autenticar en
+    // vez de lanzar un 401 explícito. Tratamos ambos como "sesión no válida".
+    if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

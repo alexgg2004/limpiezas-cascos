@@ -51,6 +51,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Almacenamiento de facturas en Cloudflare R2 (API compatible con S3) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.28.11</version>
+        </dependency>
+
         <!-- Login con Google (verificacion de ID tokens) -->
         <dependency>
             <groupId>com.google.api-client</groupId>

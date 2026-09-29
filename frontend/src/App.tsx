@@ -16,7 +16,7 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <AppLayout title="Dashboard">
+            <AppLayout title="Dashboard" showSearch={false}>
               <DashboardPage />
             </AppLayout>
           </ProtectedRoute>
@@ -27,7 +27,7 @@ export default function App() {
         path="/clientes"
         element={
           <ProtectedRoute>
-            <AppLayout title="Clientes">
+            <AppLayout title="Clientes" searchPlaceholder="Buscar cliente...">
               <ClientesPage />
             </AppLayout>
           </ProtectedRoute>
@@ -38,7 +38,7 @@ export default function App() {
         path="/sitios"
         element={
           <ProtectedRoute>
-            <AppLayout title="Sitios de limpieza">
+            <AppLayout title="Sitios de limpieza" searchPlaceholder="Buscar sitio...">
               <SitiosPage />
             </AppLayout>
           </ProtectedRoute>
@@ -49,7 +49,7 @@ export default function App() {
         path="/servicios"
         element={
           <ProtectedRoute>
-            <AppLayout title="Servicios">
+            <AppLayout title="Servicios" searchPlaceholder="Buscar servicio...">
               <ServiciosPage />
             </AppLayout>
           </ProtectedRoute>
