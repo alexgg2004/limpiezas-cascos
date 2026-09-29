@@ -9,9 +9,22 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  margin-left: 260px;
 }
 
 .app-layout__content {
   padding: 28px 32px;
   flex-grow: 1;
+}
+
+@media (max-width: 860px) {
+  .app-layout__main {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-layout__content {
+    padding: 18px 16px;
+  }
 }

@@ -41,7 +41,8 @@ Sin variables de entorno definidas, `spring.datasource.url` etc. quedan vacías 
 |---|---|---|
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Sí | Conexión a PostgreSQL |
 | `JWT_SECRET` | Sí | Clave para firmar los JWT (HS256, ≥32 bytes) |
-| `UPLOAD_DIR` (`app.upload.dir`) | Sí | Carpeta donde se guardan las facturas adjuntas |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Sí | Credenciales del bucket de Cloudflare R2 donde se guardan las facturas adjuntas (API compatible con S3) |
+| `R2_BUCKET_NAME` | No (por defecto `facturas`) | Nombre del bucket de R2 |
 | `GOOGLE_CLIENT_ID` | No* | Client ID de OAuth de Google. Sin ella, `/api/auth/google` responde `503` |
 | `GOOGLE_ALLOWED_EMAILS` | No | Solo se usa **una vez**, para migrar su valor a la tabla `correos_permitidos` si esta está vacía al arrancar. Después de esa migración inicial no se vuelve a leer — la lista se gestiona por API (ver [Correos permitidos](#correos-permitidos-lista-blanca-de-google)) |
 | `INVITATION_CODE` | No* | Clave exigida en `POST /api/auth/register`. Vacía = registro cerrado por defecto |
@@ -56,6 +57,7 @@ Sin variables de entorno definidas, `spring.datasource.url` etc. quedan vacías 
 - **Registro con email/contraseña**: `POST /api/auth/register` exige además `claveInvitacion`, comparada en tiempo constante (`MessageDigest.isEqual`) contra `app.registro.clave-invitacion`. Sin esa propiedad configurada, nadie puede registrarse por esta vía.
 - **Sin roles por endpoint todavía**: existe el enum `Rol` (`ROLE_USER`, `ROLE_ADMIN`) pero ningún endpoint distingue por rol — cualquier usuario autenticado puede hacer cualquier operación sobre cualquier dato (ver siguiente punto).
 - **Datos compartidos, no aislados por usuario**: clientes, sitios y servicios son visibles y editables por cualquier usuario autenticado, independientemente de quién los creó. `Cliente.usuario` guarda quién lo dio de alta a título informativo, pero no se usa para filtrar ni restringir acceso.
+- **CORS** (`SecurityConfig.corsConfigurationSource`): permite `http://localhost:*` y, para poder probar la app desde otro dispositivo/red con un túnel sin tocar código cada vez, cualquier subdominio de `*.ngrok-free.app`/`*.ngrok.io`/`*.ngrok.app`. Añade tu dominio real de producción a esa lista antes de desplegar.
 
 ## Modelo de datos
 
@@ -118,11 +120,11 @@ Todos los endpoints están bajo `/api`. Salvo los de `/api/auth`, todos exigen `
 
 `ServicioRequestDto`: `fecha` (obligatoria), `horas`, `precioHora`, `observaciones`, `estado` (obligatorio), `sitioId` (obligatorio), `asignadosIds` (lista de IDs de `Usuario`, opcional — vacía o ausente = sin asignar).
 
-`ServicioResponseDto` añade `totalImporte` (calculado), `nombreSitio`, `facturas` (lista de `FacturaInfoResponseDto`, puede estar vacía) y `asignados` (lista de `{ id, nombreCompleto, email }`).
+`ServicioResponseDto` añade `totalImporte` (calculado), `nombreSitio`, `clienteId`/`nombreCliente` (del cliente dueño del sitio, derivado — no es un campo propio de `Servicio`), `facturas` (lista de `FacturaInfoResponseDto`, puede estar vacía) y `asignados` (lista de `{ id, nombreCompleto, email }`).
 
 `estado` como filtro en el GET se valida contra el enum; un valor no reconocido responde `400`.
 
-⚠️ Borrar un servicio (`DELETE /api/servicios/{id}`) elimina en cascada sus filas de `facturas_adjuntas` en base de datos, pero no llama a `FileStorageService.eliminarArchivo` — los ficheros PDF/imagen correspondientes quedan huérfanos en `uploads/facturas`. Solo se limpian del disco cuando se borra una factura individualmente (`DELETE /api/servicios/{id}/facturas/{facturaId}`). Ya existía esta limitación antes de que un servicio pudiera tener varias facturas; no la he corregido porque no se pidió.
+⚠️ Borrar un servicio (`DELETE /api/servicios/{id}`) elimina en cascada sus filas de `facturas_adjuntas` en base de datos, pero no llama a `FileStorageService.eliminarArchivo` — los ficheros PDF/imagen correspondientes quedan huérfanos en el bucket de R2. Solo se limpian del bucket cuando se borra una factura individualmente (`DELETE /api/servicios/{id}/facturas/{facturaId}`). Ya existía esta limitación antes de que un servicio pudiera tener varias facturas; no la he corregido porque no se pidió.
 
 ### Facturas de un servicio (`/api/servicios/{servicioId}/facturas`)
 

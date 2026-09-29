@@ -107,13 +107,13 @@ export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onElim
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: 'var(--ink)' }}>{servicio.nombreSitio}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 2 }}>{sitio?.nombreCliente ?? ''}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 2 }}>{servicio.nombreCliente}</div>
           </div>
         </div>
         <EstadoBadge estado={servicio.estado} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: 16, background: 'var(--bg)', borderRadius: 12, marginBottom: 20 }}>
+      <div className="detail-grid">
         <DetalleCampo label="Fecha" valor={servicio.fecha} />
         <DetalleCampo label="Horas" valor={servicio.horas != null ? `${servicio.horas} h` : '—'} />
         <DetalleCampo label="Precio / hora" valor={servicio.precioHora != null ? `${servicio.precioHora.toFixed(2)} €` : '—'} />
@@ -138,7 +138,7 @@ export function ServicioDetalleModal({ open, servicio, onClose, onEditar, onElim
           <div className="field__label" style={{ marginBottom: 8 }}>
             Sitio
           </div>
-          <MapaUbicacion lat={sitio.latitud} lng={sitio.longitud} height={150} />
+          <MapaUbicacion lat={sitio.latitud} lng={sitio.longitud} mode="search" height={170} />
         </div>
       )}
 

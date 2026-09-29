@@ -4,8 +4,15 @@ import { MapaUbicacion } from '../ui/MapaUbicacion';
 import { AsignadosSelector } from './AsignadosSelector';
 import { serviciosApi } from '../../api/servicios';
 import { sitiosApi } from '../../api/sitios';
+import { clientesApi } from '../../api/clientes';
 import { facturasApi } from '../../api/facturas';
-import type { EstadoServicio, FacturaInfoResponseDto, ServicioResponseDto, SitioLimpiezaResponseDto } from '../../types';
+import type {
+  ClienteResponseDto,
+  EstadoServicio,
+  FacturaInfoResponseDto,
+  ServicioResponseDto,
+  SitioLimpiezaResponseDto,
+} from '../../types';
 
 interface Props {
   open: boolean;
@@ -24,6 +31,8 @@ const ESTADOS: { valor: EstadoServicio; label: string }[] = [
 
 export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onClose, onSaved }: Props) {
   const [sitios, setSitios] = useState<SitioLimpiezaResponseDto[]>([]);
+  const [clientes, setClientes] = useState<ClienteResponseDto[]>([]);
+  const [clienteId, setClienteId] = useState('');
   const [sitioId, setSitioId] = useState('');
   const [fecha, setFecha] = useState('');
   const [horas, setHoras] = useState('');
@@ -42,9 +51,11 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
   useEffect(() => {
     if (!open) return;
     sitiosApi.listar().then(setSitios).catch(() => setSitios([]));
+    clientesApi.listar().then(setClientes).catch(() => setClientes([]));
     setArchivosNuevos([]);
 
     if (servicio) {
+      setClienteId(String(servicio.clienteId));
       setSitioId(String(servicio.sitioId));
       setFecha(servicio.fecha);
       setHoras(servicio.horas != null ? String(servicio.horas) : '');
@@ -54,6 +65,7 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
       setAsignadosIds(servicio.asignados.map((a) => a.id));
       setFacturasExistentes(servicio.facturas);
     } else {
+      setClienteId('');
       setSitioId(sitioFijo ? String(sitioFijo) : '');
       setFecha(fechaInicial ?? '');
       setHoras('');
@@ -66,7 +78,28 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
     setError(null);
   }, [open, servicio, sitioFijo, fechaInicial]);
 
+  useEffect(() => {
+    if (sitioFijo == null || sitios.length === 0) return;
+    const sitio = sitios.find((s) => s.id === sitioFijo);
+    if (sitio) setClienteId(String(sitio.clienteId));
+  }, [sitioFijo, sitios]);
+
   const sitioSeleccionado = sitios.find((s) => String(s.id) === sitioId) ?? null;
+
+  const sitiosFiltrados = useMemo(
+    () => (clienteId ? sitios.filter((s) => String(s.clienteId) === clienteId) : sitios),
+    [sitios, clienteId],
+  );
+
+  function handleClienteChange(value: string) {
+    setClienteId(value);
+    if (value) {
+      const sitioActual = sitios.find((s) => String(s.id) === sitioId);
+      if (!sitioActual || String(sitioActual.clienteId) !== value) {
+        setSitioId('');
+      }
+    }
+  }
 
   const totalCalculado = useMemo(() => {
     const h = Number(horas);
@@ -104,6 +137,10 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
     e.preventDefault();
     setError(null);
 
+    if (!clienteId) {
+      setError('Selecciona el cliente para el que se realiza el servicio.');
+      return;
+    }
     const sitioIdNum = Number(sitioId);
     if (!sitioId || Number.isNaN(sitioIdNum)) {
       setError('Selecciona el sitio de limpieza donde se realiza el servicio.');
@@ -154,11 +191,25 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
       <form onSubmit={handleSubmit}>
         <label className="field">
           <span>
+            Cliente <span className="field__required">*</span>
+          </span>
+          <select value={clienteId} onChange={(e) => handleClienteChange(e.target.value)} disabled={!!sitioFijo}>
+            <option value="">Selecciona un cliente</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="field">
+          <span>
             Sitio de limpieza <span className="field__required">*</span>
           </span>
           <select value={sitioId} onChange={(e) => setSitioId(e.target.value)} disabled={!!sitioFijo}>
             <option value="">Selecciona un sitio de limpieza</option>
-            {sitios.map((s) => (
+            {sitiosFiltrados.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nombreDescriptivo} — {s.nombreCliente}
               </option>
@@ -168,7 +219,7 @@ export function ServicioFormModal({ open, servicio, sitioFijo, fechaInicial, onC
 
         {sitioSeleccionado && (
           <div className="field" style={{ marginBottom: 20 }}>
-            <MapaUbicacion lat={sitioSeleccionado.latitud} lng={sitioSeleccionado.longitud} height={150} />
+            <MapaUbicacion lat={sitioSeleccionado.latitud} lng={sitioSeleccionado.longitud} mode="view" height={170} />
           </div>
         )}
 

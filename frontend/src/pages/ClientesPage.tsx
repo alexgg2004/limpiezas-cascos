@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { clientesApi } from '../api/clientes';
 import { ClienteFormModal } from '../components/clientes/ClienteFormModal';
 import { ClienteDetalleModal } from '../components/clientes/ClienteDetalleModal';
 import { EliminarClienteDialog } from '../components/clientes/EliminarClienteDialog';
+import { useSearch } from '../hooks/useSearch';
 import type { ClienteResponseDto } from '../types';
 
 export function ClientesPage() {
+  const { searchTerm } = useSearch();
   const [clientes, setClientes] = useState<ClienteResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -22,6 +24,14 @@ export function ClientesPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  const clientesFiltrados = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return clientes;
+    return clientes.filter((c) =>
+      [c.nombre, c.nifCif, c.telefono, c.email].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [clientes, searchTerm]);
 
   function handleSaved(cliente: ClienteResponseDto) {
     setClientes((prev) => {
@@ -40,7 +50,11 @@ export function ClientesPage() {
         <div>
           <div className="page-title">Clientes</div>
           <div className="page-subtitle">
-            {loading ? 'Cargando...' : `${clientes.length} clientes registrados`}
+            {loading
+              ? 'Cargando...'
+              : searchTerm.trim()
+                ? `${clientesFiltrados.length} de ${clientes.length} clientes`
+                : `${clientes.length} clientes registrados`}
           </div>
         </div>
         <button type="button" className="btn btn--primary" onClick={() => setModalNuevoAbierto(true)}>
@@ -55,7 +69,11 @@ export function ClientesPage() {
         {!loading && !error && clientes.length === 0 && (
           <div className="state-message">Todavía no hay clientes registrados.</div>
         )}
-        {!loading && !error && clientes.length > 0 && (
+        {!loading && !error && clientes.length > 0 && clientesFiltrados.length === 0 && (
+          <div className="state-message">No hay clientes que coincidan con la búsqueda.</div>
+        )}
+        {!loading && !error && clientesFiltrados.length > 0 && (
+          <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
@@ -67,7 +85,7 @@ export function ClientesPage() {
               </tr>
             </thead>
             <tbody>
-              {clientes.map((c) => (
+              {clientesFiltrados.map((c) => (
                 <tr key={c.id}>
                   <td>{c.nombre}</td>
                   <td>{c.nifCif || '—'}</td>
@@ -87,6 +105,7 @@ export function ClientesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

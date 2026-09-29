@@ -27,6 +27,8 @@ public class ServicioDtos {
             EstadoServicio estado,
             Long sitioId,
             String nombreSitio,
+            Long clienteId,
+            String nombreCliente,
             List<FacturaInfoResponseDto> facturas,
             List<UsuarioDtos.UsuarioResumenDto> asignados
     ) {}

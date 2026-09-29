@@ -21,7 +21,7 @@ export function SitioDetalleModal({ open, sitio, onClose, onEditar, onEliminar }
       subtitle={sitio.nombreCliente}
       width={560}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16, padding: 16, background: 'var(--bg)', borderRadius: 12, marginBottom: 20 }}>
+      <div className="detail-grid detail-grid--3col">
         <DetalleCampo label="Dirección" valor={sitio.direccion} />
         <DetalleCampo label="C.P." valor={sitio.codigoPostal} />
         <DetalleCampo label="Ciudad" valor={sitio.ciudad} />

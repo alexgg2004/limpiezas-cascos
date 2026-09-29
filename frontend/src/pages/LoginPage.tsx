@@ -54,13 +54,7 @@ export function LoginPage() {
     <div className="login">
       <div className="login__panel">
         <div className="login__brand">
-          <svg width="28" height="26" viewBox="0 0 28 24">
-            <path d="M14 2c4.6 6.3 8 10.9 8 15A8 8 0 1 1 6 17c0-4.1 3.4-8.7 8-15Z" fill="currentColor" />
-            <circle cx="22" cy="4.5" r="2.1" fill="var(--green)" />
-          </svg>
-          <span>
-            Limpiezas <em>Cascos</em>
-          </span>
+          <img src="/logo.png" alt="Limpiezas Cascos" />
         </div>
 
         <div className="login__pitch">

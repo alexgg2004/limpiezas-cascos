@@ -56,7 +56,12 @@ public class SecurityConfig {
                 "http://localhost:*",
                 "https://*.vercel.app",
                 "capacitor://localhost",
-                "http://localhost"
+                "http://localhost",
+                // Túneles de ngrok para pruebas puntuales desde otra red (el subdominio
+                // cambia cada vez que se arranca, por eso se permite el dominio entero).
+                "https://*.ngrok-free.app",
+                "https://*.ngrok.io",
+                "https://*.ngrok.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

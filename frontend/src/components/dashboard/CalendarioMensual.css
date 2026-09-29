@@ -177,3 +177,47 @@
   color: var(--ink-3);
   padding-left: 1px;
 }
+
+@media (max-width: 640px) {
+  .calendario {
+    padding: 14px 12px 16px 12px;
+  }
+
+  .calendario__leyenda {
+    gap: 10px;
+  }
+
+  .calendario__celda {
+    min-height: 52px;
+    padding: 4px;
+  }
+
+  .calendario__chip {
+    font-size: 8.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .calendario__dias-semana div {
+    font-size: 9.5px;
+  }
+
+  .calendario__celda {
+    min-height: 40px;
+  }
+
+  .calendario__numero {
+    width: 17px;
+    height: 17px;
+    font-size: 10px;
+  }
+
+  .calendario__chip {
+    font-size: 7.5px;
+    padding: 1px 3px;
+  }
+
+  .calendario__extra {
+    font-size: 9px;
+  }
+}

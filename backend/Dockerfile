@@ -14,9 +14,6 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Crear directorio para almacenar los PDFs subidos
-RUN mkdir -p uploads/facturas
-
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
