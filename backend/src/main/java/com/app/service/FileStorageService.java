@@ -1,0 +1,106 @@
+package com.app.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.UUID;
+
+/**
+ * Almacena las facturas adjuntas en Cloudflare R2 (almacenamiento de objetos
+ * compatible con la API de S3), en vez de en disco local: necesario para
+ * desplegar en plataformas sin disco persistente y evita perder archivos en
+ * cada redeploy.
+ */
+@Service
+public class FileStorageService {
+
+    private final S3Client s3;
+    private final String bucket;
+
+    /**
+     * Si faltan credenciales de R2, s3 queda a null y cada operación falla con
+     * un mensaje claro en vez de tumbar el arranque de la app (igual que el
+     * login de Google cuando falta su configuración).
+     */
+    public FileStorageService(
+            @Value("${app.r2.account-id:}") String accountId,
+            @Value("${app.r2.access-key-id:}") String accessKeyId,
+            @Value("${app.r2.secret-access-key:}") String secretAccessKey,
+            @Value("${app.r2.bucket:facturas}") String bucket
+    ) {
+        this.bucket = bucket;
+        if (accountId.isBlank() || accessKeyId.isBlank() || secretAccessKey.isBlank()) {
+            this.s3 = null;
+            return;
+        }
+        this.s3 = S3Client.builder()
+                .endpointOverride(URI.create("https://" + accountId + ".r2.cloudflarestorage.com"))
+                .region(Region.of("auto"))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
+                .forcePathStyle(true)
+                .build();
+    }
+
+    private S3Client s3OrThrow() {
+        if (s3 == null) {
+            throw new IllegalStateException(
+                    "El almacenamiento de facturas (Cloudflare R2) no está configurado: faltan R2_ACCOUNT_ID, R2_ACCESS_KEY_ID o R2_SECRET_ACCESS_KEY");
+        }
+        return s3;
+    }
+
+    public String guardarArchivo(MultipartFile file) throws IOException {
+        S3Client cliente = s3OrThrow();
+        if (file.isEmpty()) {
+            throw new RuntimeException("El archivo subido está vacío");
+        }
+
+        String nombreOriginal = file.getOriginalFilename();
+        String extension = "";
+        if (nombreOriginal != null && nombreOriginal.contains(".")) {
+            extension = nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
+        }
+
+        String nombreUnico = UUID.randomUUID() + extension;
+
+        cliente.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(nombreUnico)
+                        .contentType(file.getContentType())
+                        .build(),
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+        );
+
+        return nombreUnico;
+    }
+
+    public Resource cargarArchivo(String nombreGuardado) {
+        try {
+            return new InputStreamResource(s3OrThrow().getObject(
+                    GetObjectRequest.builder().bucket(bucket).key(nombreGuardado).build()
+            ));
+        } catch (NoSuchKeyException e) {
+            throw new RuntimeException("No se pudo leer el archivo: " + nombreGuardado, e);
+        }
+    }
+
+    public void eliminarArchivo(String nombreGuardado) {
+        s3OrThrow().deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(nombreGuardado).build());
+    }
+}

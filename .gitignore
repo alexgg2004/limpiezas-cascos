@@ -86,3 +86,8 @@ Thumbs.db
 ### DOCKER (si usas directorios bind-mount locales para datos) ###
 pgdata/
 docker-data/
+
+### GRAPHIFY
+graphify-out
+
+.claude
