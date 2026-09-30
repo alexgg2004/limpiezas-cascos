@@ -20,10 +20,11 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * Almacena las facturas adjuntas en Cloudflare R2 (almacenamiento de objetos
+ * Almacena las facturas adjuntas en Backblaze B2 (almacenamiento de objetos
  * compatible con la API de S3), en vez de en disco local: necesario para
  * desplegar en plataformas sin disco persistente y evita perder archivos en
- * cada redeploy.
+ * cada redeploy. Cualquier otro proveedor compatible con S3 (R2, Supabase
+ * Storage...) valdría cambiando solo endpoint/región.
  */
 @Service
 public class FileStorageService {
@@ -32,26 +33,27 @@ public class FileStorageService {
     private final String bucket;
 
     /**
-     * Si faltan credenciales de R2, s3 queda a null y cada operación falla con
+     * Si faltan credenciales de B2, s3 queda a null y cada operación falla con
      * un mensaje claro en vez de tumbar el arranque de la app (igual que el
      * login de Google cuando falta su configuración).
      */
     public FileStorageService(
-            @Value("${app.r2.account-id:}") String accountId,
-            @Value("${app.r2.access-key-id:}") String accessKeyId,
-            @Value("${app.r2.secret-access-key:}") String secretAccessKey,
-            @Value("${app.r2.bucket:facturas}") String bucket
+            @Value("${app.b2.endpoint:}") String endpoint,
+            @Value("${app.b2.region:}") String region,
+            @Value("${app.b2.key-id:}") String keyId,
+            @Value("${app.b2.application-key:}") String applicationKey,
+            @Value("${app.b2.bucket:facturas}") String bucket
     ) {
         this.bucket = bucket;
-        if (accountId.isBlank() || accessKeyId.isBlank() || secretAccessKey.isBlank()) {
+        if (endpoint.isBlank() || region.isBlank() || keyId.isBlank() || applicationKey.isBlank()) {
             this.s3 = null;
             return;
         }
         this.s3 = S3Client.builder()
-                .endpointOverride(URI.create("https://" + accountId + ".r2.cloudflarestorage.com"))
-                .region(Region.of("auto"))
+                .endpointOverride(URI.create(endpoint))
+                .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
+                        AwsBasicCredentials.create(keyId, applicationKey)))
                 .forcePathStyle(true)
                 .build();
     }
@@ -59,7 +61,7 @@ public class FileStorageService {
     private S3Client s3OrThrow() {
         if (s3 == null) {
             throw new IllegalStateException(
-                    "El almacenamiento de facturas (Cloudflare R2) no está configurado: faltan R2_ACCOUNT_ID, R2_ACCESS_KEY_ID o R2_SECRET_ACCESS_KEY");
+                    "El almacenamiento de facturas (Backblaze B2) no está configurado: faltan B2_ENDPOINT, B2_REGION, B2_KEY_ID o B2_APPLICATION_KEY");
         }
         return s3;
     }
