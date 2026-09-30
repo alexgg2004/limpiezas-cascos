@@ -53,13 +53,15 @@ export function LoginPage() {
   return (
     <div className="login">
       <div className="login__panel">
-        <div className="login__brand">
-          <img src="/logo.png" alt="Limpiezas Cascos" />
-        </div>
+        <div className="login__content">
+          <div className="login__brand">
+            <img src="/icon.png" alt="Limpiezas Cascos" />
+          </div>
 
-        <div className="login__pitch">
-          <h1>Organiza cada servicio de limpieza en un solo lugar.</h1>
-          <p>Gestiona clientes, sitios y partes de servicio, desde la oficina o en el propio local.</p>
+          <div className="login__pitch">
+            <h1>Organiza cada servicio de limpieza en un solo lugar.</h1>
+            <p>Gestiona clientes, sitios y partes de servicio, desde la oficina o en el propio local.</p>
+          </div>
         </div>
 
         <div className="login__footer">© {currentYear} Limpiezas Cascos</div>
