@@ -11,13 +11,25 @@
   color: #fff;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 56px;
 }
 
+.login__content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+}
+
+.login__brand {
+  display: flex;
+  justify-content: center;
+}
+
 .login__brand img {
-  width: 84px;
-  height: 84px;
+  width: 160px;
+  height: 160px;
   object-fit: contain;
 }
 
